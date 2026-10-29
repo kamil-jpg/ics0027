@@ -53,11 +53,22 @@ class WebSession(Base):
     csrf_token = Column(String(128), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)  # absolute expiry
+    last_seen_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)  # idle timeout
 
 
 def init_db() -> None:
     Base.metadata.create_all(engine)
+
+
+def reset_sessions() -> None:
+    """Drop and recreate the web sessions table.
+
+    Session master keys live only in process memory, so sessions cannot survive a
+    server restart anyway; this also keeps the schema current.
+    """
+    WebSession.__table__.drop(engine, checkfirst=True)
+    WebSession.__table__.create(engine)
 
 
 def get_db():
