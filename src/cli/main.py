@@ -4,7 +4,7 @@ Usage examples:
     python -m src.cli.main register -u alice
     python -m src.cli.main login -u alice
     python -m src.cli.main encrypt -u alice -i notes.txt -o notes.enc
-    python -m src.cli.main decrypt -u alice -n notes.enc -o notes.out.txt
+    python -m src.cli.main decrypt -u alice -i notes.enc -o notes.out.txt
     python -m src.cli.main list -u alice
     python -m src.cli.main wipe path/to/file
 """
@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from core import accounts, crypto, storage
+from core import accounts, files, storage
 from core.db import FileRecord, SessionLocal, init_db
 from core.security import secure_wipe
 
@@ -65,16 +65,17 @@ def cmd_login(args) -> None:
         db.close()
 
 
-def cmd_encrypt(args) -> None:
-    if not os.path.isfile(args.input):
-        print(f"Error: input file not found: {args.input}", file=sys.stderr)
-        sys.exit(1)
+def _fail(message: str) -> None:
+    print(f"Error: {message}", file=sys.stderr)
+    sys.exit(1)
 
+
+def cmd_encrypt(args) -> None:
     try:
+        storage.check_input_file(args.input)
         display_name = storage.sanitize_display_name(args.output)
-    except storage.InvalidFileNameError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
+    except (storage.InvalidPathError, storage.FileTooLargeError, storage.InvalidFileNameError) as exc:
+        _fail(str(exc))
 
     db = SessionLocal()
     master_key_buf = None
@@ -85,21 +86,14 @@ def cmd_encrypt(args) -> None:
         if db.query(FileRecord).filter(
             FileRecord.user_id == user.id, FileRecord.original_name == display_name
         ).first():
-            print(f"Error: a file named '{display_name}' already exists for this user.", file=sys.stderr)
-            sys.exit(1)
+            _fail(f"a file named '{display_name}' already exists for this user.")
 
         with open(args.input, "rb") as f:
-            plaintext = f.read()
-
-        nonce, ciphertext = crypto.encrypt_bytes(bytes(master_key_buf), plaintext)
-        storage_name = storage.new_storage_name()
-        storage.save_encrypted(storage_name, ciphertext)
-
-        record = FileRecord(
-            user_id=user.id, storage_name=storage_name, original_name=display_name, nonce=nonce
-        )
-        db.add(record)
-        db.commit()
+            plaintext = f.read(storage.MAX_FILE_SIZE + 1)
+        try:
+            record = files.store_file(db, user.id, bytes(master_key_buf), display_name, plaintext)
+        except storage.FileTooLargeError as exc:
+            _fail(str(exc))
         print(f"Encrypted '{args.input}' -> stored as '{display_name}' (id={record.id}).")
     finally:
         if master_key_buf is not None:
@@ -108,10 +102,10 @@ def cmd_encrypt(args) -> None:
 
 
 def cmd_decrypt(args) -> None:
-    out_dir = os.path.dirname(os.path.abspath(args.output)) or "."
-    if not os.path.isdir(out_dir):
-        print(f"Error: output directory does not exist: {out_dir}", file=sys.stderr)
-        sys.exit(1)
+    try:
+        storage.check_output_file(args.output, overwrite=args.force)
+    except storage.InvalidPathError as exc:
+        _fail(str(exc))
 
     db = SessionLocal()
     master_key_buf = None
@@ -120,22 +114,20 @@ def cmd_decrypt(args) -> None:
         master_key_buf = bytearray(master_key)
 
         record = db.query(FileRecord).filter(
-            FileRecord.user_id == user.id, FileRecord.original_name == args.name
+            FileRecord.user_id == user.id, FileRecord.original_name == args.input
         ).first()
         if record is None:
-            print(f"Error: no file named '{args.name}' found for this user.", file=sys.stderr)
-            sys.exit(1)
+            _fail(f"no file named '{args.input}' found for this user.")
 
-        ciphertext = storage.load_encrypted(record.storage_name)
         try:
-            plaintext = crypto.decrypt_bytes(bytes(master_key_buf), record.nonce, ciphertext)
+            plaintext = files.read_file(record, bytes(master_key_buf))
+        except FileNotFoundError:
+            _fail("encrypted data for this file is missing from storage.")
         except Exception:
-            print("Error: decryption failed (wrong key or corrupted data).", file=sys.stderr)
-            sys.exit(1)
+            _fail("decryption failed (wrong key or corrupted data).")
 
-        with open(args.output, "wb") as f:
-            f.write(plaintext)
-        print(f"Decrypted '{args.name}' -> '{args.output}'.")
+        storage.write_private_file(args.output, plaintext)
+        print(f"Decrypted '{args.input}' -> '{args.output}'.")
     finally:
         if master_key_buf is not None:
             secure_wipe(master_key_buf)
@@ -161,9 +153,8 @@ def cmd_list(args) -> None:
 
 def cmd_wipe(args) -> None:
     path = args.path
-    if not os.path.isfile(path):
-        print(f"Error: file not found: {path}", file=sys.stderr)
-        sys.exit(1)
+    if not path or "\x00" in path or os.path.islink(path) or not os.path.isfile(path):
+        _fail(f"not a regular file (symlinks are refused): {path}")
     if not args.yes:
         confirm = input(f"Securely delete '{path}'? This cannot be undone. [y/N]: ")
         if confirm.strip().lower() != "y":
@@ -193,8 +184,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("decrypt", help="Decrypt a file from the vault")
     p.add_argument("-u", "--username", required=True)
-    p.add_argument("-n", "--name", required=True, help="Stored display name of the file")
+    p.add_argument("-i", "--input", "--name", required=True, help="Stored name of the encrypted file (see 'list')")
     p.add_argument("-o", "--output", required=True, help="Path to write the decrypted file to")
+    p.add_argument("-f", "--force", action="store_true", help="Overwrite the output file if it exists")
     p.set_defaults(func=cmd_decrypt)
 
     p = sub.add_parser("list", help="List the user's encrypted files")

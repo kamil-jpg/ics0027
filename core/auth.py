@@ -5,6 +5,9 @@ from argon2.exceptions import VerifyMismatchError, InvalidHash
 _hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, hash_len=32)
 
 
+DUMMY_HASH = _hasher.hash("dummy-password-for-timing-equalisation")
+
+
 def hash_password(password: str) -> str:
     return _hasher.hash(password)
 
