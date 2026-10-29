@@ -102,23 +102,32 @@ This file management system has two interfaces. It meets the requirements for **
 
 ---
 
-## Planned CLI Commands (ICS0022)
-- `secfile register` - Create a user account
-- `secfile login` - Authenticate a session
-- `secfile encrypt -i <file> -o <out>` - Encrypt a file
-- `secfile decrypt -i <file> -o <out>` - Decrypt a file
-- `secfile list` - List encrypted user files
-- `secfile wipe <file>` - Delete a local file securely
+## CLI Commands (ICS0022)
+Run as `python -m src.cli.main <command>` (the program name is `secfile`). Every command that needs an account prompts for the password with echo disabled (`-u/--username` selects the account).
+
+- `secfile register -u <user>` - Create a user account
+- `secfile login -u <user>` - Verify credentials
+- `secfile encrypt -u <user> -i <file> -o <name>` - Encrypt a local file (`-i`) into the user's encrypted store under the name `-o`
+- `secfile decrypt -u <user> -i <name> -o <out> [-f]` - Decrypt a stored file (`-i`, name as shown by `list`) to the path `-o` (`-f` overwrites an existing file)
+- `secfile list -u <user>` - List encrypted user files
+- `secfile wipe <file> [-y]` - Delete a local file securely
+
+Files stored via the CLI and via the web interface share one per-user store, so a file encrypted in one interface can be decrypted in the other.
+
+Input validation: input paths must be readable regular files up to 50 MiB; output paths must have an existing writable directory and are never overwritten without `-f`; stored names may only contain `A-Za-z0-9._ -` and no path separators; usernames are `A-Za-z0-9._-` (1-64 chars); passwords are 8-128 chars.
 
 ---
 
-## Planned Web Routes (ICS0027)
-- `GET /` - Main dashboard
+## Web Routes (ICS0027)
+- `GET /` - Main dashboard (file list; redirects to login when not authenticated)
+- `GET/POST /auth/register` - Registration form and handler
 - `GET/POST /auth/login` - Login interface and handler
-- `POST /auth/logout` - End a session
-- `GET/POST /files/upload` - File upload form and backend processor
+- `POST /auth/logout` - End a session (CSRF-protected)
+- `GET/POST /files/upload` - File upload form and backend processor (CSRF-protected)
 - `GET /files/download/{id}` - Retrieve a file and stream its decrypted content
-- `POST /files/delete/{id}` - Delete a file
+- `POST /files/delete/{id}` - Delete a file (CSRF-protected)
+
+Sessions use an idle timeout of 15 minutes and an absolute expiry of 12 hours; the session cookie is `HttpOnly; Secure; SameSite=Strict` and is replaced at login. Sessions do not survive a server restart (the unlocked master key lives only in process memory).
 
 ---
 
@@ -126,7 +135,7 @@ This file management system has two interfaces. It meets the requirements for **
 
 ### Prerequisites
 - Python 3.11+
-- `mkcert` (for local TLS certs)
+- `openssl` (always available on Linux/macOS) or `mkcert` (optional, preferred: certificate is trusted by your browser)
 
 ### Environment Setup
 ```bash
@@ -145,18 +154,27 @@ pip install -r requirements.txt
 ### Running the CLI Tool
 ```bash
 python -m src.cli.main --help
+python -m src.cli.main register -u alice
+python -m src.cli.main encrypt -u alice -i notes.txt -o notes.enc
+python -m src.cli.main list -u alice
+python -m src.cli.main decrypt -u alice -i notes.enc -o notes.out.txt
 ```
 
 ### Running the Web Server (with TLS)
 ```bash
-# Generate local certificates if they do not exist
-mkcert -install
-mkcert -key-file certs/key.pem -cert-file certs/cert.pem localhost
+# Generate a local certificate (uses mkcert if installed, otherwise openssl)
+./certs/generate_cert.sh
 
 # Run the Uvicorn server over HTTPS
 uvicorn src.web.main:app --host 127.0.0.1 --port 8000 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem
 ```
-Open `https://localhost:8000` to access the application.
+Open `https://localhost:8000` to access the application. With the `openssl` fallback the browser shows a self-signed certificate warning.
 
-### Developer note
-Since no code exists so far some parts of this specification may change with time. Until the final code is present in the repository in December 2026, this document should not be considered final.
+Data is stored under `./data` (SQLite database and encrypted blobs); set `SECFILE_DATA_DIR` / `SECFILE_STORAGE_DIR` to relocate it. Run all commands from the repository root.
+
+---
+
+## Checkpoint 2 Progress Note (Week 9)
+Implemented: CLI (register, login, encrypt, decrypt, list, wipe) with path/argument validation; AES-256-GCM file encryption with a per-user master key wrapped by an Argon2id-derived key; Argon2id password hashing; web interface (register, login, logout, dashboard, upload, download, delete) with server-side encryption/decryption, CSRF tokens, CSP and other security headers, server-side sessions with idle/absolute timeouts and session regeneration at login; HTTPS in the development setup via Uvicorn and `certs/generate_cert.sh`.
+
+Still to do: automated tests, rate limiting / account lockout, streaming (chunked) encryption for large files, session-bound CSRF for the pre-login forms, and the final hardening review.
