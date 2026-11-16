@@ -1,0 +1,13 @@
+This report describes a secure web-based file encryption and management system for the ICS0027 Web Application Security and ICS0022 Secure Programming courses. Registered users can upload, download and delete files that the server encrypts, and they can use a command-line tool on the same encrypted store.
+
+Passwords are hashed with Argon2id. Each file is encrypted with AES-256-GCM under a per-user master key that a password-derived key protects. The web interface uses TLS, server-side sessions, CSRF tokens, a strict Content Security Policy, an upload allowlist and parameterized database queries. The application checks the owner on every file operation and rejects path traversal and links. Structured audit events do not contain secrets.
+
+I verified the controls with 53 automatic tests and with attacks on a running server. The attacks covered CSRF, access to another user's file, SQL injection, XSS, unsafe uploads, path traversal, tampering and secret leakage. All tests passed. Memory wiping and secure deletion are best-effort measures, and the report states these limits.
+
+% No need to change this
+The thesis is in \langEng~and contains \calculatepages pages of text, 
+\total{totalchapters} chapters\ifthenelse{\equal{\totvalue{figure}}{0}}{}{% If no figures, do nothing
+, \total{figure} \ifnum\totvalue{figure}=1 figure\else figures\fi%
+}\ifthenelse{\equal{\totvalue{table}}{0}}{}{% If no tables, do nothing
+, \total{table} \ifnum\totvalue{table}=1 table\else tables\fi%
+}.

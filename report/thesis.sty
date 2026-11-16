@@ -1,0 +1,169 @@
+\ProvidesPackage{thesis}
+
+% overall paper settings
+\usepackage[a4paper, top=25mm, bottom=25mm, left=30mm, right=30mm]{geometry}  % Specifies the margins and size of the paper
+\usepackage{calc}                                   % Used by setlength functions
+\setlength{\parindent}{0cm}                         % Sets paragraph indentation to 0
+\linespread{1.5}                                    % Sets lins spacing to 1.5
+\setlength{\baselineskip}{12pt}                     % Sets variable line skip to 12 pt
+\setlength{\parskip}{\baselineskip}                 % Sets line skip between paragraphs to 12 pt
+\setlength{\topskip}{0pt}
+\usepackage[hang,flushmargin]{footmisc}             % Modifying indentation and alignment of footnotes
+
+
+% fonts + encodings
+\usepackage{lmodern}                                % Latin modern fonts (72 text fonts + 20 math fonts)
+\usepackage{newtxtext}                              % Sets the document font to Times Roman
+
+
+% Switch the places of Estonian and English languages, if you're writing in English
+\usepackage[greek, english, estonian]{babel}        % Add Estonian / English language support & Greek for Euro Symbol (babel makes the last language to be the main one)
+\usepackage[T2A,T1]{fontenc}                        % Selecting font encodings (T1 - for western European languages (õ, ü, ö); T2 - for Cyrillic characters)
+\usepackage[utf8]{inputenc}                         % Accept utf8 input encoding
+%% ==== RECONFIGURE STOCK FONT SIZE MACROS ==== %%
+\renewcommand\Large{\@setfontsize\Large{16pt}{18}}
+\renewcommand\large{\@setfontsize\large{14pt}{12}}
+\renewcommand\small{\@setfontsize\small{10pt}{12}}
+
+
+% figures
+\usepackage{graphicx}                               % The package builds upon the graphics package, providing a key-value interface for optional arguments to the \includegraphics command.
+\usepackage{wrapfig}                                % Wrap images properly around text
+\usepackage{float}                                  % Improved interface for floating objects (figures, tables)
+\usepackage{caption}                                % Customization of figure and table captions
+    \captionsetup{
+    labelsep=period,                                % Period separator between label and caption
+    font=small                                      % 10 pt fontsize
+    }
+\usepackage{subcaption}                             % Support for sub-captions
+    \subcaptionsetup{
+        font=small
+        }
+
+
+% tables
+\usepackage{longtable}                              % Allows you to write tables that continue to the next page.
+\usepackage{multirow}                               % Create multiple rows/columns in one table cell
+    \setlength {\marginparwidth }{2cm}
+\AtBeginEnvironment{table}{\fontsize{11}{12}}        % Table fontsize is 11pt
+\AtBeginEnvironment{longtable}{\fontsize{11}{12}\selectfont}    % Longtable fontsize is 11pt
+
+
+% other important features
+\usepackage[hidelinks]{hyperref}                    % Make links clickable
+\usepackage{ifthen}                                 % Conditional statements
+\usepackage{datetime}                               % Date
+    \renewcommand{\dateseparator}{.}                % The date is customized to be separeted with dots
+
+
+% counters
+\usepackage{chngcntr}                               % Changing the resetting of counters
+    \counterwithout{table}{chapter}                 % Table counters are no longer dependent on the chapter number
+    \counterwithout{figure}{chapter}                % Figure counters are no longer dependent on the chapter number
+\usepackage{totcount}                               % Displaying the total value of counters
+    \regtotcounter{figure}
+    \regtotcounter{table}
+    \newtotcounter{totalchapters}
+\usepackage{assoccnt}                               % Avoiding mistakes while counting chapters
+    \DeclareAssociatedCounters{chapter}{totalchapters}
+\usepackage[abspage,user,lastpage]{zref}            % Counting the pages of the main text
+    \newcounter{netpages}
+    \makeatletter
+    \newcommand{\calculatepages}{\setcounter{netpages}{\numexpr\zref@extract{lastpagetocount}{abspage} -\zref@extract{firstpagetocount}{abspage}\relax}\thenetpages\ }
+    \makeatother
+
+
+% lists
+\renewcommand{\labelitemi}{\tiny$\blacksquare$}     % For square itemized lists
+\usepackage{enumitem}                               % Sets list spacing
+    \setlist[itemize]{noitemsep, topsep=0pt, left=0.63cm}       %
+    \setlist[enumerate]{noitemsep, topsep=0pt, left=0.63cm}     %
+
+
+% math
+\usepackage{amssymb}                                % For square itemized lists
+\usepackage{amsmath}                                % For mathematical facilities
+
+
+% code
+\usepackage{verbatimbox}                            % To put program code in the center using Verbatim
+\usepackage{listings}                               % Provides a flexible way to include and format source code
+
+% references
+\usepackage[sorting=none]{biblatex}                 % Managing and formatting bibliographies and citations without sorting it alphabetically
+    \addbibresource{references.bib}                 % Adds references file
+\usepackage{csquotes}                               % Advanced facilities for handling quotations
+\emergencystretch=1em                               % To prevent overfull hbox in \printbibliography
+\usepackage[final]{microtype}                       % To prevent overfull hbox in \printbibliography - option 2
+\renewcommand*{\bibfont}{\fontsize{11pt}{11pt}\selectfont}
+
+
+% additional features
+\usepackage{todonotes}                              % Add todo notes
+\usepackage{needspace}                              % To keep text together (starts new page if not enough space). When needed, use %\needspace{6em}
+\usepackage{hyphenat}                               % Enhances hyphenation control
+\usepackage{blindtext}                              % Producing 'blind' (dummy) text for testing
+
+
+\usepackage{titlesec}                                % Customizing the formatting of section headings
+
+    \titleformat{\chapter}{\fontsize{16}{0}\bfseries}{\thechapter}{1em}{}                   % Sets the format for chapter titles: 16pt bold font, with chapter number followed by 1em of space
+    \titleformat{\section}[hang]{\fontsize{14}{0}\bf}{\thesection}{1em}{}[]                % Sets the format for section titles: 14pt bold font, section number followed by 1em of space
+    \titleformat{\subsection}[hang]{\fontsize{12}{0}\bf}{\thesubsection}{1em}{}[]          % Sets the format for subsection titles: 12pt bold font, subsection number followed by 1em of space
+    \titleformat{\subsubsection}[hang]{\fontsize{12}{0}\bf}{\thesubsubsection}{1em}{}[]     % Sets the format for subsubsection titles: 12pt bold font, subsubsection number followed by 1em of space
+
+    % Due to an unknown LaTeX issue (likely caused by \parskip), the actual space added after titles is increased by 12pt (e.g., 12pt becomes 24pt).
+    % To compensate, the space after each part is reduced by 12pt.
+    \titlespacing*{\chapter}{0pt}{60pt}{6pt}             % Adds spacing for chapter titles: no left indentation, 60pt before, and 18pt after
+    \titlespacing*{\section}{0pt}{18pt}{0pt}             % Adds spacing for section titles: no left indentation, 18pt before, and 12pt after
+    \titlespacing*{\subsection}{0pt}{12pt}{0pt}          % Adds spacing for subsection titles: no left indentation, 12pt before, and 12pt after
+    \titlespacing*{\subsubsection}{0pt}{0pt}{-12pt}      % Adds spacing for subsubsection titles: no left indentation, no extra space before or after
+
+
+% Adds control over Table of Contents (TOC), List of Figures (LOF) and List of Tables (LOT) style
+\usepackage{tocloft}                                % Imports the tocloft package to customize the table of contents (TOC), list of figures (LOF), and list of tables (LOT)
+
+    \renewcommand{\cftchapfont}{\normalfont}             % Sets chapter formatting to normal in TOC (no styling)
+    \renewcommand{\cftfigfont}{\normalfont}              % Sets figure formatting to normal in LOF (no styling)
+    \renewcommand{\cfttabfont}{\normalfont}              % Sets table formatting to normal in LOT (no styling)
+    \renewcommand{\cftchappagefont}{\normalfont}         % Sets page numbers formatting to normal in the TOC, LOF, and LOT (no styling)
+
+    \renewcommand{\cftsecindent}{0.42cm}                 % Sets the indentation for section titles in the TOC to 0.42 cm
+    \renewcommand{\cftsubsecindent}{0.85cm}              % Sets the indentation for subsection titles in the TOC to 0.85 cm
+
+    \renewcommand{\cfttoctitlefont}{\fontsize{16}{0}\bfseries}  % Formats the TOC title: center-aligned (\hfill), 16pt size, bold (\bfseries)
+    \renewcommand{\cftloftitlefont}{\fontsize{16}{0}\bfseries}  % Formats the LOF title: center-aligned, 16pt size, bold
+    \renewcommand{\cftlottitlefont}{\fontsize{16}{0}\bfseries}  % Formats the LOT title: center-aligned, 16pt size, bold
+
+    \renewcommand*{\cfttabname}{\tablename\space}        % Adds the word "Table"/"Tabel" followed by a space before table numbers in the LOT
+    \renewcommand*{\cfttabaftersnum}{.\hfill}            % Adds a dot and space after the table number in the LOT
+    \renewcommand*{\cftfigname}{\figurename\space}       % Adds the word "Figure"/"Joonis" followed by a space before figure numbers in the LOF
+    \renewcommand*{\cftfigaftersnum}{.\hfill}            % Adds a dot and space after the figure number in the LOF
+
+    \renewcommand{\cftfigpresnum}{\cftfigname}           % Prefixes figure entries in the LOF with the word "Figure"/"Joonis"
+    \renewcommand{\cfttabpresnum}{\cfttabname}           % Prefixes table entries in the LOT with the word "Table"/"Tabel"
+
+    \renewcommand{\cftaftertoctitle}{\hfill\hfill}       % Center TOC title
+    \renewcommand{\cftafterloftitle}{\hfill}             % Center LOF title
+    \renewcommand{\cftafterlottitle}{\hfill}             % Center LOT title
+
+    \setlength{\cftbeforetoctitleskip}{60pt}             % Space before the TOC title is 60pt
+    \setlength{\cftbeforeloftitleskip}{60pt}             % Space before the LOF title is 60pt
+    \setlength{\cftbeforelottitleskip}{60pt}             % Space before the LOT title is 60pt
+
+    \setlength{\cftaftertoctitleskip}{18pt}              % Space after the TOC title is 18pt
+    \setlength{\cftafterloftitleskip}{18pt}              % Space after the LOF title is 18pt
+    \setlength{\cftafterlottitleskip}{18pt}              % Space after the LOT title is 18pt
+
+    \setlength\cftbeforechapskip{0pt}                    % No vertical space before chapters in the TOC
+    \setlength{\cftfigindent}{0pt}                       % No indentation for figure entries in the LOF
+    \setlength{\cfttabindent}{0pt}                       % No indentation for table entries in the LOT
+
+    \setlength{\cfttabnumwidth}{\widthof{\cfttabname 00.~}} % Adjusts the width of the table number column in the LOT based on the word "Table/Tabel" and a two-digit number
+    \setlength{\cftfignumwidth}{\widthof{\cftfigname 00.~}} % Adjusts the width of the figure number column in the LOF based on the word "Figure/Joonis" and a two-digit number
+
+    \renewcommand{\cftpartleader}{\cftdotfill{\cftdotsep}}      % Uses dots for part entries in the TOC
+    \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}      % Uses dots for chapter entries in the TOC
+    \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}       % Uses dots for section entries in the TOC
+
+    \renewcommand{\cftdotsep}{0.3}                              % Sets the spacing between dots for all entries to 0.3 units

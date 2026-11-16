@@ -1,0 +1,33 @@
+\ifthenelse{\equal{\lang}{ENG}}{
+    \ifthenelse{\equal{\authorNameTwo}{[Second Author name]}}{ % If the second and the third authors are not provided
+        I hereby certify that I am the sole author of this thesis and that this thesis has not been presented for examination or submitted for defense anywhere else. All used materials, references to the literature, and work of others have been cited.
+        \begin{flushleft} %  The following content will be aligned to the left
+            Author:~\authorName\\  % Author's name variable
+    }{ % If the second and/or the third authors are provided
+        We hereby certify that we are the sole authors of this thesis and that this thesis has not been presented for examination or submitted for defense anywhere else. All used materials, references to the literature, and work of others have been cited.
+        \begin{flushleft}
+            Authors:\ifthenelse{\equal{\authorNameThree}{[Third Author name]}}{ % Two authors
+                \authorName~and~\authorNameTwo\\
+            }{
+                \authorName,~\authorNameTwo~and~\authorNameThree\\
+            }
+    }
+}{
+    \ifthenelse{\equal{\authorNameTwo}{[Second Author name]}}{ % If the second and the third authors are not provided
+        Kinnitan, et olen koostanud antud lõputöö iseseisvalt ning seda ei ole kellegi teise poolt varem kaitsmisele esitatud. Kõik töö koostamisel kasutatud teiste autorite tööd, olulised seisukohad, kirjandusallikatest ja mujalt pärinevad andmed on töös viidatud.
+        \begin{flushleft} %  The following content will be aligned to the left
+            Autor:~\authorNameEst\\ % Author's name variable
+    }{ % If the second and/or the third authors are provided
+        Kinnitame, et oleme koostanud antud lõputöö iseseisvalt ning seda ei ole kellegi teise poolt varem kaitsmisele esitatud. Kõik töö koostamisel kasutatud teiste autorite tööd, olulised seisukohad, kirjandusallikatest ja mujalt pärinevad andmed on töös viidatud.
+        \begin{flushleft}
+            Autorid:\ifthenelse{\equal{\authorNameThree}{[Third Author name]}}{ % Two authors
+                \authorName~ja~\authorNameTwo\\
+            }{
+                \authorName,~\authorNameTwo~ja~\authorNameThree\\
+            }       
+    }   
+}
+
+\vspace*{0.5cm}
+\signatureDate % Date
+\end{flushleft}

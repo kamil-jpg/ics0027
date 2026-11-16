@@ -1,0 +1,34 @@
+\include{misc/titlepage} % Includes the content from the file titlepage.tex located in the misc directory.
+
+\pagenumbering{arabic}   % Sets the page numbering to Arabic numerals (1, 2, 3, ...). Purpose: To start normal page numbering in Arabic numerals after the title page.
+\setcounter{page}{\abstractPageNumber} % Sets the current page number to 2.
+\fontsize{12}{0} % This changes the font size to 12pt. The second number (0) usually specifies the line spacing, but here it is set to 0, which will be the default spacing.
+
+\chapter*{{\authorDeclarationTitle}}\label{chapter:declaration} % This creates an unnumbered chapter titled "Autorideklaratsioon" and centers the text. The \label{chapter:declaration} creates a reference label for this chapter.
+\input{misc/authordeclaration.tex} % This inserts the content from the authordeclaration.tex file located in the misc folder.
+\input{misc/ai_notice.tex} % Notice about the use of AI in writing the report.
+\pagebreak % To move to the next page.
+
+\chapter*{{\abstactTitle}}\label{chapter:abstract}
+\input{misc/abstract-english.tex}
+\pagebreak
+
+\chapter*{{\listOfTermsTitle}}\label{chapter:terms}
+\input{misc/terms_abbreviations.tex}
+\pagebreak
+
+\phantomsection % This creates a linkable section for hyperref without placing visible content.
+\setcounter{tocdepth}{2} % Sets maximum depth of Table Of Contents. A value of 2 includes sections and subsections.
+\renewcommand{\contentsname}{\tableOfContentsTitle} % This renames the table of contents heading to "Sisukord" (Estonian for "Table of Contents").
+\tableofcontents % This generates the table of contents for the document.
+
+% If you don't have any figures, remove the next block of code
+\clearpage \phantomsection % This forces a new page and creates an invisible section for hyperlinking.
+\setcounter{figure}{0} % To start the figure numbering afresh from 1 in the subsequent section.
+\renewcommand{\listfigurename}{\listOfFiguresTitle}
+\listoffigures % This generates the list of figures for the document.
+
+% If you don't have any tables, remove the next block of code
+\clearpage \phantomsection
+\renewcommand{\listtablename}{\listOfTablesTitle}
+\listoftables % This generates the list of tables for the document.

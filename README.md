@@ -71,7 +71,7 @@ This threat model covers OWASP Top 10 web vulnerabilities, memory security, and 
 * **Cryptographic Library:** **`cryptography` (PyCA)**
   * *Reason:* This Python library provides AES-GCM through OpenSSL. The `argon2-cffi` library provides Argon2id.
 * **Web Framework:** **FastAPI (Uvicorn)**
-  * *Reason:* This asynchronous web framework provides automatic OpenAPI documentation, Pydantic validation, and middleware for session management.
+  * *Reason:* This asynchronous web framework provides Pydantic validation and middleware for session management. The application switches off the generated API documentation pages.
 * **Database:** **SQLite (via SQLAlchemy ORM)**
   * *Reason:* This lightweight file database suits local semester deployment. It supports parameterized queries.
 * **TLS Deployment Plan:**
@@ -190,7 +190,7 @@ python -m pytest -v --junitxml=docs/checkpoint3-results.xml
 python -m pip check
 ```
 
-Install the updated dependency pins before running; an existing virtual environment is not automatically upgraded by pulling source changes. Tests create isolated temporary databases, storage and certificates. The HTTPS smoke test requires `openssl`. The checkpoint verification recorded **53 passing tests**, with one non-failing test-client deprecation warning. See [the assessment and demonstrations](docs/CHECKPOINT_3.md), [recorded results](docs/checkpoint3-test-results.txt), and [draft report](REPORT_DRAFT.md).
+Install the updated dependency pins before running; an existing virtual environment is not automatically upgraded by pulling source changes. Tests create isolated temporary databases, storage and certificates. The HTTPS smoke test requires `openssl`. The checkpoint verification recorded **53 passing tests**, with one non-failing test-client deprecation warning. See [the assessment and demonstrations](docs/CHECKPOINT_3.md), [recorded results](docs/checkpoint3-test-results.txt), and [LaTeX report](report/main.tex).
 
 ---
 

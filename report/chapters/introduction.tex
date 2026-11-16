@@ -1,0 +1,27 @@
+\section{Background and objectives}
+
+Many people store private files on a server. If an attacker reads these files, the owner can suffer real harm. A file storage service must therefore protect the files on disk, on the network and inside the application. Web applications also have typical problems, such as CSRF, XSS, SQL injection, harmful uploads and path traversal \cite{owasptop10}.
+
+This project is a file manager that tries to avoid these problems. Users can work with it in a browser or with a command-line tool. Both ways use the same accounts and the same encrypted file store. The project covers the file-manager option of two courses: ICS0027 Web Application Security \cite{wasproject} and ICS0022 Secure Programming \cite{spproject}.
+
+The objectives are:
+
+\begin{itemize}
+    \item Let a registered user upload, download, list and delete files.
+    \item Encrypt every file on the server before it is written to disk.
+    \item Make sure that one user can never read, change or delete the files of another user.
+    \item Protect the web interface against CSRF, XSS, SQL injection, harmful uploads and path traversal.
+    \item Protect passwords and keys, and remove them from memory when they are no longer needed.
+    \item Show generic error messages and write a structured log without secrets.
+    \item Test each security control with automatic tests and with real attack attempts.
+\end{itemize}
+
+\section{Scope and threat model}
+
+The project has a web application, a command-line tool and a shared core library. The web application runs over HTTPS. Password recovery, multi-factor authentication, file sharing between users, malware scanning and storage quotas are outside the scope.
+
+The threat model has these attackers: an anonymous visitor, a registered user who tries to reach the files of another user, a malicious website that tries CSRF, a user who uploads a harmful file or file name, a person who copies the database and the encrypted files, and a person who changes an encrypted file on disk. The application process and its private data directory are trusted. An attacker who controls the server or the device of a logged-in user is outside the model. The server performs the encryption, so it can see the plain file while it uses the file.
+
+\section{Structure of the report}
+
+Chapter~\ref{chapter:method} explains how each component works and which security technique it uses. Chapter~\ref{chapter:results} describes the tests and the attacks that I tried. Chapter~\ref{chapter:discussion} gives the conclusion, the limits and the lessons learned.

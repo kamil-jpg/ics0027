@@ -1,0 +1,42 @@
+\ifthenelse{\equal{\lang}{ENG}}{
+    % English TITLE PAGE
+\begin{titlepage}
+    \headheight = 57pt % This sets the height of the header
+    \footskip = 5pt % This sets the distance between the bottom of the text area and the footer
+    \headsep = 0pt % This sets the space between the header and the top of the main text
+    
+    \centering % Centers the content
+    \universityEng\\ % University name variable
+    \schoolEng % School name variable
+    
+    \vspace*{4.5 cm} % Adds vertical space between the top section and the next section of the title page
+    
+    \begin{center}
+    
+    % Adds authors names to the title page
+    \authorName~ \studentcode \\
+    \ifthenelse{\equal{\authorNameTwo}{[Second Author name]}}{}{\authorNameTwo\ \studentcodeTwo\\} % If the second author’s name is not provided, this line is ignored
+    \ifthenelse{\equal{\authorNameThree}{[Third Author name]}}{}{\authorNameThree\ \studentcodeThree\\} % If the third author’s name is not provided, this line is ignored
+    \vspace*{1.5 cm}
+    
+    \begin{Large}
+        \fontsize{20}{16}{\textbf{\thesisTitleEng}}\\ % Adds thesis name to the title page
+    \end{Large}
+    
+    \vspace*{1.5 cm}
+    \thesisType   \\ % Adds thesis type to the title page
+    \end{center}
+    
+    \vspace*{0.6 cm}
+    
+    \begin{flushright} % The following content will be aligned to the right
+    % Adds supervisors to the title page
+    \supervisor: \supervisorName\\ \supervisortitle\\
+    \vspace*{0.2 cm}
+    \ifthenelse{\equal{\cosupervisorName}{[Co-Supervisor's Name]}}{}{\cosupervisor: \cosupervisorName\\\cosupervisortitle} % If the cosupervisor’s name is not provided, this line is ignored
+    \end{flushright}
+    \vfill % Fills the remaining vertical space on the page, pushing any content below it to the bottom of the page
+    
+    Tallinn \Year % Adds city and year to the title page
+    \end{titlepage}
+}{}

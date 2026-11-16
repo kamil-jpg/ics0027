@@ -1,0 +1,50 @@
+\section{Test method and results}
+
+I used three methods. First, an automatic test suite checks the core library, the web application, the command-line tool and the TLS connection. The tests use their own temporary database, storage directory and certificate. Second, I attacked a running HTTPS server with a script, with two users, Alice and Bob. Third, I reviewed the source code for missing checks, shell calls, raw SQL and places where a secret could enter a log.
+
+The suite has 53 tests in five files. All 53 passed, found no broken requirements. The tests cover CSRF, access control, SQL injection, XSS, upload types and sizes, path and link attacks, encryption and tampering, secure deletion, sessions and login failures, memory cleanup, log content, generic errors and a real HTTPS connection. The commands to repeat the run are:
+
+\begin{lstlisting}[frame=single, basicstyle=\small, breaklines=true]
+python3 -m venv .venv && source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m pytest -v --junitxml=docs/checkpoint3-results.xml
+\end{lstlisting}
+
+\section{Attack demonstrations}
+
+\textbf{CSRF.} The test signs in as Alice and uploads a file. It opens a second session and sends nine requests to the upload, delete and logout routes. Each route gets a request without a token, one with the text \texttt{forged-token} and one with the token of the second session. All nine return 403. The file stays in place and can be downloaded. After that, the valid token of Alice deletes the file. On the running server, an upload without a token and a delete with a forged token also returned 403.
+
+\textbf{Access to the file of another user.} Alice uploads \texttt{notes.txt}. Bob does not see it in his list. Bob requests the download and delete routes with the ID of the file of Alice. For the delete request he uses his own valid CSRF token, so that only the owner check can stop him. Both return 404. In the command-line tool, Bob tries to decrypt and delete \texttt{notes.txt} by name. Both commands fail with exit code 1 and create no output. The blob stays on disk, and Alice can still use her file.
+
+\section{Attack vectors and results}
+
+Table~\ref{tab:attacks} lists the attack vectors that I tried, the observed result and the control that stopped each attack.
+
+\begin{longtable}[hp]{|p{2.7cm}|p{7.5cm}|p{3.0cm}|}
+	\caption{Attack vectors, results and mitigations.}
+	\label{tab:attacks}\\ \hline
+	\textbf{Attack} & \textbf{Attempt and observed result} & \textbf{Mitigation} \\
+	\hline
+	\endfirsthead
+	\multicolumn{3}{l}{\tablename\ \thetable\ -- \textit{Continues...}} \\
+	\hline
+	\textbf{Attack} & \textbf{Attempt and observed result} & \textbf{Mitigation} \\
+	\hline
+	\endhead
+	\hline \multicolumn{3}{l}{\textit{Continues...}} \\
+	\endfoot
+	\hline
+	\endlastfoot
+	CSRF & Missing, forged and other-session tokens returned 403 on upload, delete and logout. Missing, reused and expired login tokens were rejected. & Session and pre-login tokens, SameSite cookie. \\ \hline
+	Cross-user access & Bob could not list, download, decrypt or delete the file of Alice (web 404, CLI exit code 1). & Owner filter in every operation. \\ \hline
+	SQL injection & The payloads \texttt{' OR 1=1 -{}-}, \texttt{' UNION SELECT 1 -{}-} and \texttt{'; DROP TABLE files; -{}-} reached the queries only as bound parameters, and the SQL text had only \texttt{?} placeholders. No record was returned and no table was removed. A route ID \texttt{1 OR 1=1} returned 400. A login with \texttt{alice' OR 1=1 -{}-} returned 401. & ORM parameter binding, integer route IDs. \\ \hline
+	XSS & The file name \texttt{<img src=x onerror=alert(1)>.txt} became \texttt{\_img src\_x onerror\_alert\_1\_\_.txt}. A script tag in stored metadata was shown as escaped text. A text file with a script tag was sent as an attachment. & Name cleaning, auto-escaping, CSP, download headers. \\ \hline
+	Unsafe uploads & HTML, SVG, PHP, Python, executable and extensionless files returned 400 and created no record. A file of exactly 50 MiB was accepted. One more byte was rejected, and the partial blob was removed. & Extension list, size limits. \\ \hline
+	Traversal and command injection & The names \texttt{test;touch pwn}, \texttt{../file}, \texttt{a/b} and \texttt{a\textbackslash b} were rejected. A \texttt{..} part and symbolic links in the parent path were refused for read, write and wipe. \texttt{/static/../core/db.py} returned 404. & Strict names, no shell, no-follow opens. \\ \hline
+	Link attacks & A symbolic link in place of a blob could not be read or deleted. Files with hard links could not be overwritten or wiped. & Regular-file and link-count checks. \\ \hline
+	Encryption failures & Empty and binary files made a correct round trip. A wrong key, changed ciphertext or wrong additional data made the decryption fail. No plain text was in the blob. & AES-GCM tag check. \\ \hline
+	Deletion & Just before removal, the file contained only zero bytes. The database row was removed. & Overwrite, fsync, identity check. \\ \hline
+	Login and session abuse & Wrong and unknown credentials gave the same message. The eleventh attempt in five minutes returned 429. Login created a new session. Logout and both expiry types removed the key from the cache. & Argon2id, rate limit, session lifecycle. \\ \hline
+	Errors, secrets in logs, memory & Simulated storage and database errors gave a generic message. The captured log had no sample password, file content, token or key. Buffers were zero after success and after errors. & Fixed log format, error handlers, \texttt{finally} cleanup. \\ \hline
+	TLS and headers & A real HTTPS request succeeded with certificate verification. The response had secure cookies, the CSP and HSTS. & Uvicorn TLS, middleware. \\ \hline
+\end{longtable}

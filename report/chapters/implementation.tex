@@ -1,0 +1,155 @@
+\section{Architecture and technology}
+
+The application is written in Python 3.12. It uses FastAPI 0.163 with Uvicorn as the web server, Jinja2 for HTML templates, SQLAlchemy with SQLite for the database, the \texttt{cryptography} library for AES-256-GCM and \texttt{argon2-cffi} for Argon2id. I tested it with pytest and httpx.
+
+Figure~\ref{fig:architecture} shows the parts of the system. The web layer and the command-line tool are two entry points. Both call the same core library. The core library does all work with accounts, keys, files and logs. For this reason both entry points use the same ownership checks and the same encryption code. The database and the encrypted files are in one private directory.
+
+\begin{figure}[htb]
+    \centering
+    \begin{tikzpicture}
+        \node[box, minimum width=4.2cm] (browser) at (0,0) {Web browser\\(user device)};
+        \node[box, minimum width=4.2cm] (term) at (7.8,0) {Terminal\\(local user)};
+        \node[box, minimum width=4.2cm] (web) at (0,-2.6) {Web layer (FastAPI)\\headers, CSRF, sessions,\\input checks};
+        \node[box, minimum width=4.2cm] (clim) at (7.8,-2.6) {CLI module\\password prompt,\\path checks};
+        \node[box, minimum width=12cm] (core) at (3.9,-4.9) {Shared core\\accounts, crypto, files, storage, audit log};
+        \node[box, minimum width=4.2cm] (db) at (0,-7.2) {SQLite database\\users, files, sessions};
+        \node[box, minimum width=4.2cm] (blobs) at (7.8,-7.2) {Encrypted file store\\one blob per file};
+        \draw[arr] (browser) -- node[right, note] {HTTPS (TLS)} (web);
+        \draw[arr] (term) -- node[right, note] {commands} (clim);
+        \draw[arr] (web) -- (web |- core.north);
+        \draw[arr] (clim) -- (clim |- core.north);
+        \draw[arr] (db |- core.south) -- (db);
+        \draw[arr] (blobs |- core.south) -- (blobs);
+        \node[region, fit=(browser)(term), label={[note]above:Outside the trust boundary}] {};
+        \node[region, fit=(web)(clim)(core), label={[note]left:Application host}] {};
+        \node[region, fit=(db)(blobs), label={[note]below:Private data directory (owner only)}] {};
+    \end{tikzpicture}
+    \caption{System architecture and trust boundaries.}
+    \label{fig:architecture}
+\end{figure}
+
+\section{Accounts and encryption keys}
+
+A username has 1 to 64 characters: letters, digits, dot, underscore and hyphen. A password has 8 to 128 characters. The upper limit stops very long passwords from slowing down the server, because Argon2id needs much time and memory. The database stores a salted Argon2id hash of the password \cite{rfc9106, owaspPasswords}. It never stores the password.
+
+Each user has a random 256-bit master key that encrypts the files of this user. The application does not store the master key in plain form. It encrypts the master key with a key-encryption key (KEK). The KEK comes from the password with a second Argon2id run and a separate random salt. Figure~\ref{fig:keys} shows this. A person who steals the database cannot decrypt the files without the password. The price is that there is no password recovery.
+
+\begin{figure}[htb]
+    \centering
+    \begin{tikzpicture}
+        \node[box, minimum width=4.6cm] (pw) at (0,0) {Password\\(typed by the user)};
+        \node[box, minimum width=5.6cm] (hash) at (8.4,2.0) {Password hash\\(stored in the database)};
+        \node[box, minimum width=5.6cm] (kek) at (8.4,0) {Key-encryption key (KEK)\\(memory only)};
+        \node[box, minimum width=5.6cm] (wrapped) at (8.4,-2.2) {Wrapped master key\\(stored in the database)};
+        \node[box, minimum width=4.6cm] (mk) at (0,-2.2) {Master key\\(random, memory only\\while logged in)};
+        \node[box, minimum width=4.6cm] (blob) at (0,-4.6) {Encrypted file\\(stored on disk)};
+        \draw[arr] (pw.north east) -- node[above, note, sloped, pos=0.5] {Argon2id, salt 1} (hash.west);
+        \draw[arr] (pw) -- node[above, note] {Argon2id, salt 2} (kek);
+        \draw[arr] (kek) -- node[right, note] {AES-256-GCM} (wrapped);
+        \draw[arr] (mk) -- node[above, note] {is wrapped} (wrapped);
+        \draw[arr] (mk) -- node[right, note, xshift=2pt] {AES-256-GCM, nonce, storage name as AAD} (blob);
+    \end{tikzpicture}
+    \caption{Key hierarchy. At login the KEK unlocks the master key again.}
+    \label{fig:keys}
+\end{figure}
+
+Files use AES-256-GCM with a fresh random 12-byte nonce \cite{nistgcm}. The encrypted file holds the ciphertext followed by the 16-byte tag. The nonce is in the database. The random storage name of the file is part of the authenticated data, so an attacker cannot swap the content of two files. A changed file or a wrong key makes the decryption fail.
+
+At login the application checks the password format, finds the user with a bound query, and verifies the password hash. For an unknown user it verifies against a dummy hash, so the response time does not show which usernames exist. Every failure returns the same message: ``Invalid username or password.'' Login and registration are limited to 10 requests in 5 minutes for each client address.
+
+\section{Sessions and CSRF protection}
+
+The web application keeps sessions on the server. The browser only holds a random 256-bit token in a cookie with the attributes Secure, HttpOnly and \texttt{SameSite=Strict} \cite{owaspSessions}. A new session is created at every login, and the old session of the browser is destroyed. This prevents session fixation. The idle timeout is 15 minutes, and the absolute lifetime is 12 hours. The unlocked master key stays in a cache in process memory. It is not in the database or in the cookie. After a server restart all users must log in again.
+
+Every form that changes data has a hidden CSRF token \cite{owaspCsrf}. The login and registration forms use a single-use token that is linked to a short-lived \texttt{preauth} cookie. All other forms (upload, delete, logout) use a random token that belongs to the session. The server compares tokens in constant time. A request without a valid token gets the status 403. Requests that only read data do not change any state.
+
+\section{XSS protection}
+
+Jinja2 escapes all values in the HTML templates, for example file names. The templates do not use the \texttt{safe} filter and contain no JavaScript. Because of this, the Content Security Policy can forbid all scripts: \texttt{default-src 'self';} \texttt{script-src 'none';} \texttt{object-src 'none';} \texttt{base-uri 'none';} \texttt{frame-ancestors 'none';} \texttt{form-action 'self'}. A middleware function adds this header to every response. It also adds \texttt{X-Content-Type-Options: nosniff}, \texttt{X-Frame-Options: DENY}, \texttt{Referrer-Policy: no-referrer}, \texttt{Cache-Control: no-store} and HSTS \cite{rfc6797}. The application never shows file content in a page. Downloads have the type \texttt{application/octet-stream} and the header \texttt{Content-Disposition: attachment}.
+
+\section{Input validation and uploads}
+
+The server validates all input. The client checks help the user but give no protection. Table~\ref{tab:validation} lists the main rules.
+
+\begin{longtable}[hp]{|p{3.0cm}|p{7.5cm}|p{2.6cm}|}
+	\caption{Input validation rules.}
+	\label{tab:validation}\\ \hline
+	\textbf{Input} & \textbf{Rule} & \textbf{Where} \\
+	\hline
+	\endfirsthead
+	\multicolumn{3}{l}{\tablename\ \thetable\ -- \textit{Continues...}} \\
+	\hline
+	\textbf{Input} & \textbf{Rule} & \textbf{Where} \\
+	\hline
+	\endhead
+	\hline \multicolumn{3}{l}{\textit{Continues...}} \\
+	\endfoot
+	\hline
+	\endlastfoot
+	Username, password & Format and length as in Section 2.2. & Web, CLI, core \\ \hline
+	Upload file name & Keep the part after the last \texttt{/} or backslash. Replace each character outside letters, digits, \texttt{.}, \texttt{\_}, space and \texttt{-} with \texttt{\_}. Cut to 255 characters. Reject empty names, \texttt{.} and \texttt{..}. & Web \\ \hline
+	Upload type & Extension must be txt, md, csv, json, pdf, png, jpg, jpeg, zip or bin. & Web \\ \hline
+	File size & At most 50 MiB. The code counts the bytes while it reads. & Web, CLI, core \\ \hline
+	Stored name (CLI) & 1 to 255 characters from the safe set above. No path separators. & CLI, core \\ \hline
+	File ID in a route & Must be an integer, or the status is 400. & Web \\ \hline
+	Request size & At most 64 KiB, and for uploads 50 MiB plus 64 KiB. The server checks \texttt{Content-Length} and the real number of bytes. & Web \\ \hline
+	Local path (CLI) & No \texttt{..} part, no control characters, no symbolic links. & CLI, core \\ \hline
+\end{longtable}
+
+The extension list is a simple policy. It is not a malware scan. This is acceptable here, because the application never runs, unpacks or shows an uploaded file \cite{owaspUpload}. The framework would write large uploads to a temporary file in plain form. The application sets the parser limit so that uploads stay in memory instead.
+
+\section{Storage, download and access control}
+
+An upload is encrypted in chunks of 1 MiB with one reusable buffer. The code creates the blob file with a new random name, \texttt{O\_EXCL}, \texttt{O\_NOFOLLOW} and the mode 0600. The database row is written after the blob is complete. If anything fails, the function rolls back and removes the blob. A download decrypts the whole file in memory first, so no byte leaves the server before the tag check has passed. Then it sends the data in chunks and wipes the buffer.
+
+Every file operation uses the user ID from the server-side session, and the user cannot change it. The list, download and delete functions all filter the database rows by this ID. Figure~\ref{fig:access} shows the flow for a download. A file of another user and a file that does not exist give the same answer (404), so an attacker cannot learn which IDs exist. The core library repeats the owner check, so a new route that forgets it in the web layer is still safe. The command-line tool finds a file by name only inside the list of the logged-in user.
+
+\begin{figure}[htb]
+    \centering
+    \begin{tikzpicture}
+        \tikzset{decision/.style={box, thick, fill=gray!12, minimum width=5.2cm}}
+        \node[box, minimum width=5.2cm] (start) at (0,0) {GET /files/download/\{id\}};
+        \node[decision] (d1) at (0,-1.6) {Valid session cookie?};
+        \node[decision] (d2) at (0,-3.2) {Row with this ID and\\this user ID?};
+        \node[box, minimum width=5.2cm] (dec) at (0,-4.8) {Decrypt and check the tag};
+        \node[decision] (d3) at (0,-6.2) {Tag valid?};
+        \node[box, minimum width=5.2cm] (ok) at (0,-7.7) {Send attachment, audit: success};
+        \node[box, minimum width=5cm] (r1) at (7.5,-1.6) {Redirect to login (303)};
+        \node[box, minimum width=5cm] (r2) at (7.5,-3.2) {404 Not found, audit: denied};
+        \node[box, minimum width=5cm] (r3) at (7.5,-6.2) {Generic error (500), audit: failure};
+        \draw[arr] (start) -- (d1);
+        \draw[arr] (d1) -- node[right, note] {yes} (d2);
+        \draw[arr] (d2) -- node[right, note] {yes} (dec);
+        \draw[arr] (dec) -- (d3);
+        \draw[arr] (d3) -- node[right, note] {yes} (ok);
+        \draw[arr] (d1) -- node[above, note] {no} (r1);
+        \draw[arr] (d2) -- node[above, note] {no} (r2);
+        \draw[arr] (d3) -- node[above, note] {no} (r3);
+    \end{tikzpicture}
+    \caption{Checks in a file download.}
+    \label{fig:access}
+\end{figure}
+
+\section{SQL injection and file system safety}
+
+The application uses the SQLAlchemy ORM for all queries, so user values go to the database as bound parameters, separate from the SQL text. The only direct SQL statement switches on the SQLite foreign key check and has no variable parts. The code never builds SQL text from input.
+
+The module \texttt{core/storage.py} protects the file system. Blob names are random and are checked against a fixed pattern. The code opens a path one directory at a time with \texttt{O\_NOFOLLOW} and \texttt{O\_DIRECTORY}, so a symbolic link cannot replace a directory between the check and the use. It rejects \texttt{..} parts and control characters, checks with \texttt{fstat} that each opened file is a regular file, and rejects hard-linked files for overwrite and delete. Output files get the mode 0600 and never replace an existing file unless the user adds \texttt{-{}-force}. The data directory has the mode 0700. The source code has no shell call, so there is no command injection. I searched it for \texttt{subprocess}, \texttt{os.system}, \texttt{eval} and \texttt{exec} and found no use.
+
+Secure deletion overwrites the whole file with zero bytes, flushes it, calls \texttt{fsync}, checks that the name still points to the same file, and then removes it. For a stored file it also removes the database row. The command-line tool asks for the password and a confirmation first. This is best effort. An SSD, a copy-on-write file system, a snapshot or a backup can keep old data.
+
+\section{Memory management}
+
+Pure Python code cannot cause a buffer overflow. The equivalent measures here are strict length limits on all input and bounded buffers. The second aim is to remove secrets from memory after use. The code keeps keys and file data in \texttt{bytearray} objects, which can be overwritten in place. The function \texttt{secure\_wipe} fills them with zeros in \texttt{finally} blocks, so it also runs after errors. The code wipes the KEK after use, the master key after registration and after each CLI command, each request copy of the master key, the key cache at logout, expiry and shutdown, the upload buffer and the plain data of a download. There are limits. A Python string such as the password cannot be overwritten, the crypto library returns \texttt{bytes} that the code cannot wipe, and the system can write memory to swap or to a crash dump.
+
+\section{Errors, logging, TLS and secrets}
+
+The user sees only fixed messages, such as ``Invalid request.'', ``Not found.'' and ``The request could not be completed.''. Three handlers (form errors, HTTP errors and a catch-all middleware) produce them, so no stack trace, path or database message reaches the user. The command-line tool prints \texttt{Error: The request could not be completed.} for unexpected errors and exits with the code 1.
+
+The function \texttt{audit} writes one JSON object for each security event \cite{owaspLogging}. The fields are \texttt{timestamp} (UTC), \texttt{event} (from a fixed list such as \texttt{authentication}, \texttt{csrf}, \texttt{file\_encrypt}, \texttt{file\_decrypt}, \texttt{file\_delete}), \texttt{outcome} (\texttt{success}, \texttt{failure} or \texttt{denied}), \texttt{user\_id} and \texttt{source\_address}. The function accepts no free text and raises an error for an unknown event or outcome. The log never contains passwords, tokens, keys, file names, file content or exception text. A typical line is:
+
+\begin{lstlisting}[frame=single, basicstyle=\scriptsize, breaklines=true]
+{"timestamp": "2026-11-16T17:56:28.558538+00:00", "event": "file_decrypt", "outcome": "denied", "user_id": 2, "source_address": "127.0.0.1"}
+\end{lstlisting}
+
+The web server must run over HTTPS. The script \texttt{certs/generate\_cert.sh} makes a local certificate with \texttt{mkcert} or \texttt{openssl}, and Uvicorn loads it. The recommended command also uses \texttt{-{}-no-proxy-headers} and \texttt{-{}-no-access-log}, so clients cannot fake their address and access logs cannot leak query strings. The application needs very few secrets. It has no database password, API key or mail account, and each user key is stored only in wrapped form. The certificate, the private key, the \texttt{data/} directory, database files and \texttt{.env} are in \texttt{.gitignore}.

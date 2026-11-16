@@ -1,0 +1,174 @@
+%x%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE: PROCEED WITH CAUTION!
+%x%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The commands below need to be defined.
+% Square brackets should be removed.
+% Estonian title page will be generated automatically       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\lang}{ENG} % Choose the language of the thesis (Estonian is the default one)
+
+% If your work is in Estonian, English title is used for abstract. Don't forget to add it here!
+% For English thesis is vice versa
+\newcommand{\thesisTitleEng}{Secure Web-Based File Encryption and Management System} % variable with thesis title
+\newcommand{\thesisTitleEst}{Secure Web-Based File Encryption and Management System} % Title in Estonian
+
+% Choose your thesis
+\newcommand{\thesisType}{ICS0027}
+
+% Thesis author
+\newcommand{\authorName}{Kamil Blasiak}
+\newcommand{\studentcode}{245156IVSB}
+
+% Second author. If you are the sole author, leave it as it is
+\newcommand{\authorNameTwo}{[Second Author name]}
+\newcommand{\studentcodeTwo}{[Student Code]}
+
+% Third author. If you are the sole author, leave it as it is
+\newcommand{\authorNameThree}{[Third Author name]}
+\newcommand{\studentcodeThree}{[Student Code]}
+
+% Main supervisor
+\newcommand{\supervisorName}{Ali Ghasempour}
+\newcommand{\supervisortitle}{MSc}
+
+% Co-supervisor. If you have only one supervisor, leave it as it is
+\newcommand{\cosupervisorName}{[Co-Supervisor's Name]}
+\newcommand{\cosupervisortitle}{[Academic degree]}
+
+% Dates. Default to current current date.
+% You can hard code a value by replacing the parameter with a text
+% Year of publication (defaults to current year).
+\newcommand{\Year}{\the\year{}}
+
+% Signature date (defaults to today).
+\newcommand{\signatureDate}{\ddmmyyyydate\today}
+
+% PDF Metadata
+\newcommand{\version}{Checkpoint 3 draft}
+\newcommand{\keywords}{web application security, file encryption, AES-GCM, Argon2id, CSRF, XSS, access control, secure programming}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%            DO NOT EDIT BELOW THIS LINE                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\universityEng}{TALLINN UNIVERSITY OF TECHNOLOGY}
+\newcommand{\schoolEng}{School of Information Technologies}
+\newcommand{\universityEst}{TALLINNA TEHNIKAÜLIKOOL}
+\newcommand{\schoolEst}{Infotehnoloogia teaduskond}
+
+\ifthenelse {\equal{\authorName}{[Author name]}}
+  {\newcommand{\authorNameEst}{[Ees- ja perenimi]}}
+  {\newcommand{\authorNameEst}{\authorName}}
+
+\ifthenelse {\equal{\studentcode}{[Student Code]}}
+  {\newcommand{\studentcodeEst}{[Üliõpilaskood]}}
+  {\newcommand{\studentcodeEst}{\studentcode}}
+
+\ifthenelse {\equal{\supervisorName}{[Supervisor's Name]}}
+  {\newcommand{\supervisorNameEst}{[Juhendaja nimi]}}
+  {\newcommand{\supervisorNameEst}{\supervisorName}}
+
+\ifthenelse {\equal{\supervisortitle}{[Academic degree]}}
+  {\newcommand{\supervisortitleEst}{[Teaduskraad]}}
+  {\newcommand{\supervisortitleEst}{\supervisortitle}}
+
+\ifthenelse {\equal{\cosupervisorName}{[Co-Supervisor's Name]}}
+  {\newcommand{\cosupervisorNameEst}{[Kaasjuhendaja nimi]}}
+  {\newcommand{\cosupervisorNameEst}{\cosupervisorName}}
+
+\ifthenelse {\equal{\cosupervisortitle}{[Academic degree]}}
+  {\newcommand{\cosupervisortitleEst}{[Teaduskraad]}}
+  {\newcommand{\cosupervisortitleEst}{\cosupervisortitle}}
+
+\ifthenelse {\equal{\authorNameTwo}{[Second Author name]}}
+  {\newcommand{\authorNameTwoEst}{[Teise autori nimi]}}
+  {\newcommand{\authorNameTwoEst}{\authorNameTwo}}
+
+\ifthenelse {\equal{\studentcodeTwo}{[Student Code]}}
+  {\newcommand{\studentcodeTwoEst}{[Üliõpilaskood]}}
+  {\newcommand{\studentcodeTwoEst}{\studentcodeTwo}}
+
+\ifthenelse {\equal{\authorNameThree}{[Third Author name]}}
+  {\newcommand{\authorNameThreeEst}{[Kolmanda autori nimi]}}
+  {\newcommand{\authorNameThreeEst}{\authorNameThree}}
+
+\ifthenelse {\equal{\studentcodeThree}{[Student Code]}}
+  {\newcommand{\studentcodeThreeEst}{[Üliõpilaskood]}}
+  {\newcommand{\studentcodeThreeEst}{\studentcodeThree}}
+
+\ifthenelse {\equal{\thesisType}{Bachelor's Thesis}}
+      {\newcommand{\thesisTypeEst}{Bakalaureusetöö}}
+      {
+        \ifthenelse {\equal{\thesisType}{Master's Thesis}}
+          {\newcommand{\thesisTypeEst}{Magistritöö}}
+          {\newcommand{\thesisTypeEst}{Bakalaureusetöö / Magistritöö}}
+      }
+
+\newcommand{\supervisor}{Supervisor}
+\newcommand{\supervisorEst}{Juhendaja}
+
+\newcommand{\cosupervisor}{Co-Supervisor}
+\newcommand{\cosupervisorEst}{Kaasjuhendaja}
+
+
+\ifthenelse{\not \equal{\lang}{ENG}}{
+    % Estonian version
+    \newcommand{\thesisTitle}{\thesisTitleEst}
+    \newcommand{\abstractThesisTitle}{\thesisTitleEng}
+    \newcommand{\langEst}{eesti}
+    \newcommand{\langEng}{Estonian}
+    \newcommand{\selectedLang}{estonian}
+    \newcommand{\authorDeclarationTitle}{Autorideklaratsioon}
+    \newcommand{\abstactTitle}{Lühikokkuvõte}
+    \newcommand{\secondAbstractTitle}{Abstract}
+    \newcommand{\listOfTermsTitle}{Lühendite ja mõistete sõnastik}
+    \newcommand{\tableOfContentsTitle}{Sisukord}
+    \newcommand{\listOfFiguresTitle}{Jooniste loetelu}
+    \newcommand{\listOfTablesTitle}{Tabelite loetelu}
+    \newcommand{\referencesTitle}{Kasutatud kirjandus}
+    \newcommand{\appendixTitle}{Lisa}
+    \newcommand{\licenceTitle}{Lihtlitsents lõputöö reprodutseerimiseks ja lõputöö üldsusele kättesaadavaks tegemiseks}
+    \newcommand{\licenceFootnote}{Lihtlitsents ei kehti juurdepääsupiirangu kehtivuse ajal vastavalt üliõpilase taotlusele lõputööle juurdepääsupiirangu kehtestamiseks, mis on allkirjastatud teaduskonna dekaani poolt, välja arvatud ülikooli õigus lõputööd reprodutseerida üksnes säilitamise eesmärgil. Kui lõputöö on loonud kaks või enam isikut oma ühise loomingulise tegevusega ning lõputöö kaas- või ühisautor(id) ei ole andnud lõputööd kaitsvale üliõpilasele kindlaksmääratud tähtajaks nõusolekut lõputöö reprodutseerimiseks ja avalikustamiseks vastavalt lihtlitsentsi punktidele 1.1. ja 1.2, siis lihtlitsents nimetatud tähtaja jooksul ei kehti.}
+    \newcommand{\abstractPageNumber}{2}
+  }{
+    % English version
+    \newcommand{\thesisTitle}{\thesisTitleEng}
+    \newcommand{\abstractThesisTitle}{\thesisTitleEst}
+    \newcommand{\langEst}{inglise}
+    \newcommand{\langEng}{English}
+    \newcommand{\selectedLang}{english}
+    \newcommand{\authorDeclarationTitle}{Author’s declaration of originality}
+    \newcommand{\abstactTitle}{Abstract}
+    \newcommand{\secondAbstractTitle}{Annotatsioon}
+    \newcommand{\listOfTermsTitle}{List of abbreviations and terms}
+    \newcommand{\tableOfContentsTitle}{Table of contents}
+    \newcommand{\listOfFiguresTitle}{List of figures}
+    \newcommand{\listOfTablesTitle}{List of tables}
+    \newcommand{\referencesTitle}{References}
+    \newcommand{\appendixTitle}{Appendix}
+    \newcommand{\licenceTitle}{Non-exclusive licence for reproduction and publication of a graduation thesis}
+    \newcommand{\licenceFootnote}{The non-exclusive licence is not valid during the validity of access restriction indicated in the student's application for restriction on access to the graduation thesis that has been signed by the school's dean, except in case of the university's right to reproduce the thesis for preservation purposes only. If a graduation thesis is based on the joint creative activity of two or more persons and the co-author(s) has/have not granted, by the set deadline, the student defending his/her graduation thesis consent to reproduce and publish the graduation thesis in compliance with clauses 1.1 and 1.2 of the non-exclusive licence, the non-exclusive licence shall not be valid for the period.}
+    \newcommand{\abstractPageNumber}{2}
+  }
+
+%
+% PDF settings
+%
+% Packages and styles for the diagrams in the report
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, fit, backgrounds, calc}
+\tikzset{
+    box/.style={draw, fill=white, rounded corners=2pt, align=center, font=\footnotesize\linespread{1}\selectfont, inner sep=4pt, minimum height=8mm},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+    darr/.style={-{Stealth[length=2mm]}, thick, dashed},
+    region/.style={draw, dashed, rounded corners=3pt, inner sep=7pt},
+    note/.style={font=\scriptsize\linespread{1}\selectfont, align=center},
+}
+
+\hypersetup
+{
+    pdfauthor={\authorName}, % Adds author's name in metadata, no need to change
+    pdfsubject={\thesisTitle}, % Adds subject in metadata, no need to change
+    pdfkeywords={\keywords} % Adds keywords in metadata
+}

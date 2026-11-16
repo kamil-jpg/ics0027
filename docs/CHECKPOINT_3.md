@@ -20,7 +20,7 @@ Verified on 16 November 2026 against the **file-manager** requirements in the su
 | Encryption/decryption and secure deletion tests | Empty/binary/large round trips, wrong key/tampering/AAD checks, zero-filled bytes observed before unlink, record removal, link refusal. | Pass; physical erasure is not guaranteed |
 | Authentication failure and validation edge cases | Wrong/unknown credentials, rate limiting, session expiry, missing fields, traversal, command-shaped names, unsupported types and size boundaries. | Pass |
 | Security cases with vectors, results and mitigations | [Run output](checkpoint3-test-results.txt), [JUnit results](checkpoint3-results.xml), report Section 3.2 and the demonstrations below. | Pass |
-| Introduction, Implementation, Security Analysis, Conclusion | [REPORT_DRAFT.md](../REPORT_DRAFT.md), aligned with Section 1.3 of both PDFs. | Draft content complete |
+| Introduction, Implementation, Security Analysis, Conclusion | The LaTeX report in [report/](../report), aligned with Section 1.3 of both PDFs. | Draft content complete |
 
 ## Recorded test run
 

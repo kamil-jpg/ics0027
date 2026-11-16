@@ -1,0 +1,63 @@
+%
+% Tallinn University of Technology - bachelor, master thesis Éstonian template for LaTeX
+%
+%
+% Public version 1.4
+% 2025 Refactored to follow actual guidelines (Ago Luberg et al.)
+%
+% Public version 1.3
+% 2023 translated main parts to Estonian (by Ago Luberg)
+%
+% Public version 1.2
+% 2022 Updated by Karl Janson to match the new formatting guidelines
+%
+% Public Version 1.1
+% 2019 Adjusted by Frank Korving for his Bachelor Thesis, with contributions from Sander Arnus
+%
+% Public version 1.0
+% 2010 - 2013 Thijs Nugteren and Joos Buijs for Master Thesis
+%
+% THIS IS THE MAIN FILE (i.e. compile this file, compiling the others directly won't work)
+%
+
+\documentclass[12pt]{report} % Default font size is 12pt, default paper size is a4
+
+% all the other includes etc. are done in the thesis.sty file.
+\usepackage{thesis} % thesis formatting
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE:                                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% * Content chapter files are located in "chapters" folder, %
+%   included using the "chapters_main.tex" file             %
+%                                                           %
+% * Appendices are located in "appendices" folder,          %
+%   included using the "appendices_main.tex" file           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTE:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% * config.tex includes automations and variables that are
+%   accessible template-wide.
+%
+% * Author's name, thesis title and other variables must be
+%   changed inside the config.tex file.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{config/config.tex}
+
+\begin{document}
+\selectlanguage{\selectedLang}  % Translating automatically figure and table names (Figure / Joonis, Table / Tabel)
+
+% Pages like title, auhtor's declaration, etc.
+\input{misc/misc_main}
+
+% Content chapters
+\input{chapters/chapters_main.tex}
+
+\pagebreak % Content that follows starts on the new page
+\phantomsection % Creates linkable section without placing visible content
+\addcontentsline{toc}{chapter}{\referencesTitle} % adds a new chapter entry labeled "Kasutatud kirjandus" to TOC
+\printbibliography[title=\referencesTitle] % The command pulls from the .bib file and and formats the output
+
+\end{document}

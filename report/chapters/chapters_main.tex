@@ -1,0 +1,27 @@
+\zlabel{firstpagetocount}       % DO NOT REMOVE! Used for counting number of pages of main text
+
+% Part Labels Explanation:
+% Labels in the form \label{chapter:<part_name>} are used to categorize chapters into specific parts of the thesis structure.
+% These labels are essential for calculating the ratio of text dedicated to different thesis sections (e.g., Introduction, Methodology, Results, Discussion, Summary).
+% Allowed labels:
+% - chapter:introduction -> Introduction (<10% of the text).
+% - chapter:method       -> Methodology (<20% of the text).
+% - chapter:results      -> Results (30–40% of the text).
+% - chapter:discussion   -> Analysis, Discussion, and Conclusions (30–40% of the text).
+% - chapter:summary      -> Summary (<0.5 pages).
+% How to use: Add a \label{chapter:<part_name>} for each chapter to indicate its part. 
+% These labels ensure consistency and allow automated tests to validate the thesis structure.
+
+\chapter{Introduction}\label{chapter:introduction}
+\input{chapters/introduction}
+
+\chapter{Implementation}\label{chapter:method}
+\input{chapters/implementation.tex}
+
+\chapter{Security Analysis}\label{chapter:results}
+\input{chapters/security_analysis.tex}
+
+\chapter{Conclusion}\label{chapter:discussion}
+\input{chapters/summary.tex}
+
+\zlabel{lastpagetocount}        % DO NOT REMOVE! Used for counting number of pages of main text

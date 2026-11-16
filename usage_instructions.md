@@ -94,7 +94,7 @@ Open **https://localhost:8000**. With the `openssl` certificate, the browser sho
 ## 5. Tests and report
 
 Install `requirements-dev.txt` and run `python -m pytest -v --junitxml=docs/checkpoint3-results.xml` and `python -m pip check`.
-The tests use temporary storage; the HTTPS test uses a temporary certificate and requires `openssl`. The [checkpoint assessment](docs/CHECKPOINT_3.md) maps requirements to evidence and gives reproducible attack demonstrations. The [draft report](REPORT_DRAFT.md) records the security analysis and limitations. The recorded result is 53 passing tests and one test-client deprecation warning.
+The tests use temporary storage; the HTTPS test uses a temporary certificate and requires `openssl`. The [checkpoint assessment](docs/CHECKPOINT_3.md) maps requirements to evidence and gives reproducible attack demonstrations. The report is written in the TalTech thesis template in `report/`; build it with `cd report && latexmk -pdf main.tex` (needs a LaTeX distribution with `biber`). The recorded result is 53 passing tests and one test-client deprecation warning.
 
 ## 6. Troubleshooting
 
