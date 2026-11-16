@@ -1,0 +1,68 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- /tmp/cp3venv/bin/python
+rootdir: /home/kamil/TalTech/ics0027
+plugins: anyio-4.16.0
+collecting ... collected 53 items
+
+tests/test_checkpoint3.py::test_file_csrf_demonstration_and_cross_session_token PASSED [  1%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[attack.html] PASSED [  3%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[attack.svg] PASSED [  5%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[attack.php] PASSED [  7%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[attack.py] PASSED [  9%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[attack.exe] PASSED [ 11%]
+tests/test_checkpoint3.py::test_disallowed_upload_types[no-extension] PASSED [ 13%]
+tests/test_checkpoint3.py::test_file_xss_payload_and_download_headers PASSED [ 15%]
+tests/test_checkpoint3.py::test_sql_injection_is_bound_and_cannot_select_owner_files[' OR 1=1 --] PASSED [ 16%]
+tests/test_checkpoint3.py::test_sql_injection_is_bound_and_cannot_select_owner_files[' UNION SELECT 1 --] PASSED [ 18%]
+tests/test_checkpoint3.py::test_sql_injection_is_bound_and_cannot_select_owner_files['; DROP TABLE files; --] PASSED [ 20%]
+tests/test_checkpoint3.py::test_owner_scoped_cli_list_decrypt_delete_and_web_list PASSED [ 22%]
+tests/test_checkpoint3.py::test_stored_file_is_overwritten_before_web_deletion PASSED [ 24%]
+tests/test_checkpoint3.py::test_symlink_parent_and_traversal_refused[read] PASSED [ 26%]
+tests/test_checkpoint3.py::test_symlink_parent_and_traversal_refused[write] PASSED [ 28%]
+tests/test_checkpoint3.py::test_symlink_parent_and_traversal_refused[wipe] PASSED [ 30%]
+tests/test_checkpoint3.py::test_hard_link_write_and_wipe_refused PASSED  [ 32%]
+tests/test_checkpoint3.py::test_ciphertext_symlinks_and_tampering_fail_closed PASSED [ 33%]
+tests/test_checkpoint3.py::test_encryption_buffers_are_wiped_on_success_and_failure[False] PASSED [ 35%]
+tests/test_checkpoint3.py::test_encryption_buffers_are_wiped_on_success_and_failure[True] PASSED [ 37%]
+tests/test_checkpoint3.py::test_download_plaintext_wiped_and_log_fields_secret_free PASSED [ 39%]
+tests/test_checkpoint3.py::test_session_rotation_and_absolute_expiry PASSED [ 41%]
+tests/test_checkpoint3.py::test_failed_logout_still_wipes_key PASSED     [ 43%]
+tests/test_checkpoint3.py::test_file_internal_errors_and_cli_cleanup_are_secret_free PASSED [ 45%]
+tests/test_checkpoint3.py::test_anonymous_file_operations_and_preauth_token_expiry PASSED [ 47%]
+tests/test_checkpoint3.py::test_empty_and_binary_files_and_wrong_key[] PASSED [ 49%]
+tests/test_checkpoint3.py::test_empty_and_binary_files_and_wrong_key[content1] PASSED [ 50%]
+tests/test_checkpoint3.py::test_audit_rejects_arbitrary_fields_and_untrusted_address PASSED [ 52%]
+tests/test_cli.py::test_cli_file_roundtrip_and_wipe PASSED               [ 54%]
+tests/test_cli.py::test_cli_failure_is_generic PASSED                    [ 56%]
+tests/test_core.py::test_crypto_roundtrip_and_tampering PASSED           [ 58%]
+tests/test_core.py::test_authentication_and_owner_bound_files PASSED     [ 60%]
+tests/test_core.py::test_bad_filenames[] PASSED                          [ 62%]
+tests/test_core.py::test_bad_filenames[.] PASSED                         [ 64%]
+tests/test_core.py::test_bad_filenames[..] PASSED                        [ 66%]
+tests/test_core.py::test_bad_filenames[../file] PASSED                   [ 67%]
+tests/test_core.py::test_bad_filenames[a/b] PASSED                       [ 69%]
+tests/test_core.py::test_bad_filenames[a\\b] PASSED                      [ 71%]
+tests/test_core.py::test_bad_filenames[test;touch pwn] PASSED            [ 73%]
+tests/test_core.py::test_bad_filenames[name\n] PASSED                    [ 75%]
+tests/test_core.py::test_secure_delete_and_symlink_refusal PASSED        [ 77%]
+tests/test_core.py::test_private_write_does_not_overwrite_without_force PASSED [ 79%]
+tests/test_core.py::test_exact_file_size_limit PASSED                    [ 81%]
+tests/test_core.py::test_streaming_file_compatibility_and_limit PASSED   [ 83%]
+tests/test_tls.py::test_real_https_server PASSED                         [ 84%]
+tests/test_web.py::test_web_attacks_and_owner_isolation PASSED           [ 86%]
+tests/test_web.py::test_session_expiry_wipes_key PASSED                  [ 88%]
+tests/test_web.py::test_request_limits_and_generic_validation PASSED     [ 90%]
+tests/test_web.py::test_oversized_upload_and_csrf_replay PASSED          [ 92%]
+tests/test_web.py::test_authentication_rate_limit PASSED                 [ 94%]
+tests/test_web.py::test_internal_errors_are_generic_and_secret_free PASSED [ 96%]
+tests/test_web.py::test_request_key_copies_are_wiped PASSED              [ 98%]
+tests/test_web.py::test_large_multipart_upload_stays_in_memory PASSED    [100%]
+
+=============================== warnings summary ===============================
+../../../../tmp/cp3venv/lib64/python3.12/site-packages/fastapi/testclient.py:1
+  /tmp/cp3venv/lib64/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /home/kamil/TalTech/ics0027/docs/checkpoint3-results.xml -
+======================== 53 passed, 1 warning in 15.72s ========================

@@ -1,7 +1,8 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-sqlalchemy==2.0.35
-argon2-cffi==23.1.0
-cryptography==43.0.1
-jinja2==3.1.4
-python-multipart==0.0.9
+fastapi==0.163.1
+starlette==1.10.0
+uvicorn[standard]==0.54.0
+sqlalchemy==2.0.57
+argon2-cffi==25.1.0
+cryptography==50.0.2
+jinja2==3.1.6
+python-multipart==0.0.34

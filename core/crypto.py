@@ -36,7 +36,7 @@ def derive_key(password: str, salt: bytes) -> bytes:
     )
 
 
-def encrypt_bytes(key: bytes, plaintext: bytes, associated_data: bytes = None) -> tuple[bytes, bytes]:
+def encrypt_bytes(key: bytes | bytearray, plaintext: bytes, associated_data: bytes | None = None) -> tuple[bytes, bytes]:
     """Encrypt plaintext with AES-256-GCM. Returns (nonce, ciphertext)."""
     nonce = os.urandom(NONCE_SIZE)
     aesgcm = AESGCM(key)
@@ -44,7 +44,7 @@ def encrypt_bytes(key: bytes, plaintext: bytes, associated_data: bytes = None) -
     return nonce, ciphertext
 
 
-def decrypt_bytes(key: bytes, nonce: bytes, ciphertext: bytes, associated_data: bytes = None) -> bytes:
+def decrypt_bytes(key: bytes | bytearray, nonce: bytes, ciphertext: bytes, associated_data: bytes | None = None) -> bytes:
     """Decrypt AES-256-GCM ciphertext. Raises InvalidTag on tampering or wrong key."""
     aesgcm = AESGCM(key)
     return aesgcm.decrypt(nonce, ciphertext, associated_data)

@@ -1,11 +1,12 @@
 """Server-side web session management: creation, validation, and in-memory master-key cache."""
 import datetime
 import secrets
+from threading import RLock
 
 from sqlalchemy.orm import Session as DbSession
 
-from core.db import WebSession
-from core.security import secure_wipe
+from core.db import WebSession, utc_now
+from core.security import audit, secure_wipe
 
 IDLE_TIMEOUT = datetime.timedelta(minutes=15)
 ABSOLUTE_TIMEOUT = datetime.timedelta(hours=12)
@@ -13,13 +14,14 @@ ABSOLUTE_TIMEOUT = datetime.timedelta(hours=12)
 # Master keys never touch the database or the cookie; they live only in this
 # process-local cache for the lifetime of the session, and are wiped on logout/expiry.
 _master_key_cache: dict[str, bytearray] = {}
+_key_lock = RLock()
 
 
 def _now() -> datetime.datetime:
-    return datetime.datetime.utcnow()
+    return utc_now()
 
 
-def create_session(db: DbSession, user_id: int, master_key: bytes) -> tuple[str, str]:
+def create_session(db: DbSession, user_id: int, master_key: bytearray) -> tuple[str, str]:
     """Create a new session row and return (session_token, csrf_token)."""
     purge_expired(db)
     session_token = secrets.token_urlsafe(32)
@@ -35,7 +37,9 @@ def create_session(db: DbSession, user_id: int, master_key: bytes) -> tuple[str,
     )
     db.add(row)
     db.commit()
-    _master_key_cache[session_token] = bytearray(master_key)
+    with _key_lock:
+        _master_key_cache[session_token] = bytearray(master_key)
+    audit("session_create", "success", user_id)
     return session_token, csrf_token
 
 
@@ -45,10 +49,16 @@ def _is_expired(row: WebSession, now: datetime.datetime) -> bool:
 
 def get_session(db: DbSession, session_token: str) -> WebSession | None:
     """Return the live session for a token, sliding the idle timeout; destroy it if expired."""
-    if not session_token:
+    purge_expired(db)
+    if not session_token or len(session_token) > 128:
         return None
     row = db.query(WebSession).filter(WebSession.session_token == session_token).first()
     if row is None:
+        return None
+    with _key_lock:
+        has_key = session_token in _master_key_cache
+    if not has_key:
+        destroy_session(db, session_token)
         return None
     now = _now()
     if _is_expired(row, now):
@@ -66,16 +76,29 @@ def purge_expired(db: DbSession) -> None:
             destroy_session(db, row.session_token)
 
 
-def get_master_key(session_token: str) -> bytes | None:
-    key = _master_key_cache.get(session_token)
-    return bytes(key) if key is not None else None
+def get_master_key(session_token: str) -> bytearray | None:
+    with _key_lock:
+        key = _master_key_cache.get(session_token)
+        return bytearray(key) if key is not None else None
+
+
+def clear_cached_keys() -> None:
+    with _key_lock:
+        for key in _master_key_cache.values():
+            secure_wipe(key)
+        _master_key_cache.clear()
 
 
 def destroy_session(db: DbSession, session_token: str) -> None:
-    row = db.query(WebSession).filter(WebSession.session_token == session_token).first()
-    if row is not None:
-        db.delete(row)
-        db.commit()
-    key = _master_key_cache.pop(session_token, None)
-    if key is not None:
-        secure_wipe(key)
+    try:
+        row = db.query(WebSession).filter(WebSession.session_token == session_token).first()
+        if row is not None:
+            user_id = row.user_id
+            db.delete(row)
+            db.commit()
+            audit("session_destroy", "success", user_id)
+    finally:
+        with _key_lock:
+            key = _master_key_cache.pop(session_token, None)
+            if key is not None:
+                secure_wipe(key)

@@ -17,7 +17,7 @@ The application has a low-level core package (`core/`). The package contains the
   ┌──────────────────────────────────────────────────────────────┐
   │                    Web Server Layer (FastAPI)                │
   │  • Session Handling (HttpOnly, Secure, SameSite=Strict)      │
-  │  • CSRF Validation Middleware & CSP Headers                  │
+  │  • CSRF Validation & CSP Headers                             │
   │  • Input Validation & Route Authorization                    │
   └──────────────────────────────┬───────────────────────────────┘
                                  │
@@ -41,9 +41,9 @@ The application has a low-level core package (`core/`). The package contains the
 ```
 
 ### Data Flow and Encryption Locations
-1. **In-Transit Protection:** TLS 1.3 encrypts all web traffic. The CLI handles traffic in process memory.
-2. **Key Derivation and Storage:** Argon2id derives keys from master passwords. The system derives an encryption key for each file and user operation. The system stores each key in a temporary memory buffer. The system clears each buffer after the cryptographic operation.
-3. **Data-at-Rest Encryption:** The server or core engine encrypts each file with **AES-256-GCM** before it writes the file to the target path.
+1. **In-Transit Protection:** The web server must be deployed with HTTPS. Configure the TLS version at the server or trusted TLS terminator; the example below does not enforce TLS 1.3 specifically.
+2. **Key Derivation and Storage:** Argon2id derives a key-encryption key from the master password. It wraps a random per-user master key, which encrypts that user's files. Each encryption has a fresh nonce and authenticates a random record identifier.
+3. **Data-at-Rest Encryption:** The core encrypts files with **AES-256-GCM**. It clears mutable key buffers when possible; Python and its dependencies can retain immutable or internal copies, so guaranteed erasure is not possible.
 
 ---
 
@@ -57,9 +57,9 @@ This threat model covers OWASP Top 10 web vulnerabilities, memory security, and 
 | **XSS** | HTML/JavaScript Injection | ICS0027 | Encode all output. Use Content Security Policy (`default-src 'self'`). Escape output for its context in the web interface. |
 | **CSRF** | Cross-Site Request Forgery | ICS0027 | Add a separate anti-CSRF token to each session. Include the token in each web request that changes state. Set the `SameSite=Strict` and `HttpOnly` cookie flags. |
 | **Injection** | SQL Injection | Both | Use parameterized queries or the SQLAlchemy ORM for all database access. |
-| **Input/Path** | Path Traversal and Command Injection | Both | Sanitize all file names. Map stored files to UUIDs or hashes. Reject relative paths such as `../`. Do not call a shell. |
+| **Input/Path** | Path Traversal and Command Injection | Both | Validate stored names, normalize uploaded names, map blobs to random IDs, and do not call a shell. CLI local paths are intentionally selected by the user and may be relative. |
 | **Auth** | Session Fixation and Hijacking | ICS0027 | Create a new session ID at login. End the session at logout or timeout. Set the `Secure`, `HttpOnly`, and `SameSite` cookie flags. |
-| **Storage** | Unencrypted Secret or File Leakage | Both | Use AES-256-GCM authenticated encryption for files at rest. Store only Argon2id password hashes and cryptographic salts in the database. |
+| **Storage** | Unencrypted Secret or File Leakage | Both | Encrypt file contents; store password hashes, salts, wrapped keys, file names and other metadata in the database. |
 | **Bypass** | Client-Side Control Bypass | ICS0027 | Enforce authorization and input validation on the server. Repeat or replace client checks at backend endpoints. |
 
 ---
@@ -69,7 +69,7 @@ This threat model covers OWASP Top 10 web vulnerabilities, memory security, and 
 * **Language:** **Python 3.11+**
   * *Reason:* Python has a readable syntax and a standard memory abstraction. It also supports explicit byte clearing with `bytearray` or custom memory buffers. Python provides web and CLI libraries.
 * **Cryptographic Library:** **`cryptography` (PyCA)**
-  * *Reason:* This Python library provides primitives such as `AESGCM` and `Argon2id`. It uses C-level OpenSSL bindings.
+  * *Reason:* This Python library provides AES-GCM through OpenSSL. The `argon2-cffi` library provides Argon2id.
 * **Web Framework:** **FastAPI (Uvicorn)**
   * *Reason:* This asynchronous web framework provides automatic OpenAPI documentation, Pydantic validation, and middleware for session management.
 * **Database:** **SQLite (via SQLAlchemy ORM)**
@@ -91,12 +91,12 @@ This threat model covers OWASP Top 10 web vulnerabilities, memory security, and 
 
 ---
 
-# Secure Web and CLI File Encryption System
+# Secure Web and CLI File Manager
 
-This file management system has two interfaces. It meets the requirements for **ICS0027 (Web Application Security)** and **ICS0022 (Secure Programming)**.
+This project follows the **file-manager option** for **ICS0027 (Web Application Security)** and **ICS0022 (Secure Programming)**. The CLI and web application share accounts and an encrypted file store.
 
 ## Scope and Features
-- **Core Security:** Encrypt files at rest with AES-256-GCM. Hash passwords with Argon2id. Clear memory after each cryptographic operation.
+- **Core Security:** Encrypt files at rest with AES-256-GCM. Hash passwords with Argon2id. Best-effort clearing of mutable key buffers.
 - **Web Interface (ICS0027):** Use CSRF protection, CSP headers, XSS prevention, and HTTPS session management.
 - **CLI Interface (ICS0022):** Manage files in a terminal application with secure input handling and memory safety.
 
@@ -110,11 +110,15 @@ Run as `python -m src.cli.main <command>` (the program name is `secfile`). Every
 - `secfile encrypt -u <user> -i <file> -o <name>` - Encrypt a local file (`-i`) into the user's encrypted store under the name `-o`
 - `secfile decrypt -u <user> -i <name> -o <out> [-f]` - Decrypt a stored file (`-i`, name as shown by `list`) to the path `-o` (`-f` overwrites an existing file)
 - `secfile list -u <user>` - List encrypted user files
+- `secfile delete -u <user> -i <name> [-y]` - Authenticate, overwrite and remove an owned stored file and its metadata
 - `secfile wipe <file> [-y]` - Delete a local file securely
 
 Files stored via the CLI and via the web interface share one per-user store, so a file encrypted in one interface can be decrypted in the other.
 
 Input validation: input paths must be readable regular files up to 50 MiB; output paths must have an existing writable directory and are never overwritten without `-f`; stored names may only contain `A-Za-z0-9._ -` and no path separators; usernames are `A-Za-z0-9._-` (1-64 chars); passwords are 8-128 chars.
+
+CLI file operations refuse symlinks in the target and parent path and reject `..` path components. Overwriting and wiping also reject hard-linked targets. `delete` requires account authentication and an owned stored file; `wipe` is a local filesystem operation governed by OS permissions. Both overwrite before unlinking. Overwriting is **best effort**, not guaranteed secure erasure on SSDs, copy-on-write filesystems, snapshots or backups.
+
 
 ---
 
@@ -127,14 +131,18 @@ Input validation: input paths must be readable regular files up to 50 MiB; outpu
 - `GET /files/download/{id}` - Retrieve a file and stream its decrypted content
 - `POST /files/delete/{id}` - Delete a file (CSRF-protected)
 
-Sessions use an idle timeout of 15 minutes and an absolute expiry of 12 hours; the session cookie is `HttpOnly; Secure; SameSite=Strict` and is replaced at login. Sessions do not survive a server restart (the unlocked master key lives only in process memory).
+All state-changing forms, including registration and login, use CSRF tokens. Pre-login tokens are single-use and expire after 10 minutes. Sessions use an idle timeout of 15 minutes and an absolute expiry of 12 hours; the session cookie is `HttpOnly; Secure; SameSite=Strict` and is replaced at login. Sessions do not survive a server restart (the unlocked master key lives only in process memory). A process-local per-address limit allows 10 registration/login attempts per five minutes; successful attempts also count.
+
+Use a **single Uvicorn worker**: keys, pre-login tokens and the rate limit are process-local, and startup resets the session table. Behind a proxy, configure trusted client IPs and independent rate limits. Upload requests are limited to 50 MiB plus 64 KiB of multipart overhead; other POST/PUT/PATCH bodies are limited to 64 KiB. File encryption is chunked; uploads are buffered in memory to avoid plaintext temporary files, and downloads currently decrypt in memory.
+
+Web uploads allow `.txt`, `.md`, `.csv`, `.json`, `.pdf`, `.png`, `.jpg`, `.jpeg`, `.zip` and `.bin`. This is an extension policy, not malware detection. Contents are never executed, extracted or rendered; downloads use attachment headers and `application/octet-stream`.
 
 ---
 
 ## Local Setup and Run Instructions
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.11+ on Linux (checkpoint tests used Python 3.12.16)
 - `openssl` (always available on Linux/macOS) or `mkcert` (optional, preferred: certificate is trusted by your browser)
 
 ### Environment Setup
@@ -166,15 +174,25 @@ python -m src.cli.main decrypt -u alice -i notes.enc -o notes.out.txt
 ./certs/generate_cert.sh
 
 # Run the Uvicorn server over HTTPS
-uvicorn src.web.main:app --host 127.0.0.1 --port 8000 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem
+uvicorn src.web.main:app --host 127.0.0.1 --port 8000 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem --no-access-log --no-proxy-headers
 ```
 Open `https://localhost:8000` to access the application. With the `openssl` fallback the browser shows a self-signed certificate warning.
 
 Data is stored under `./data` (SQLite database and encrypted blobs); set `SECFILE_DATA_DIR` / `SECFILE_STORAGE_DIR` to relocate it. Run all commands from the repository root.
 
+Security events are JSON messages containing a UTC timestamp, fixed operation/outcome values, an optional numeric user ID and a validated source address (`local` for the CLI). They exclude filenames, credentials, tokens, keys, content and exception text. Never enable request-body, cookie, credential, or URL/query-string logging in Uvicorn, proxies or monitoring. The direct-server command disables access logs and proxy-header interpretation; configure trusted peers explicitly when adding a reverse proxy.
+
+### Tests and report
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest -v --junitxml=docs/checkpoint3-results.xml
+python -m pip check
+```
+
+Install the updated dependency pins before running; an existing virtual environment is not automatically upgraded by pulling source changes. Tests create isolated temporary databases, storage and certificates. The HTTPS smoke test requires `openssl`. The checkpoint verification recorded **53 passing tests**, with one non-failing test-client deprecation warning. See [the assessment and demonstrations](docs/CHECKPOINT_3.md), [recorded results](docs/checkpoint3-test-results.txt), and [draft report](REPORT_DRAFT.md).
+
 ---
 
-## Checkpoint 2 Progress Note (Week 9)
-Implemented: CLI (register, login, encrypt, decrypt, list, wipe) with path/argument validation; AES-256-GCM file encryption with a per-user master key wrapped by an Argon2id-derived key; Argon2id password hashing; web interface (register, login, logout, dashboard, upload, download, delete) with server-side encryption/decryption, CSRF tokens, CSP and other security headers, server-side sessions with idle/absolute timeouts and session regeneration at login; HTTPS in the development setup via Uvicorn and `certs/generate_cert.sh`.
-
-Still to do: automated tests, rate limiting / account lockout, streaming (chunked) encryption for large files, session-bound CSRF for the pre-login forms, and the final hardening review.
+## Checkpoint 3 Progress Note (Week 12)
+Both file-manager interfaces provide authenticated encryption, decryption, listing and deletion. Checkpoint evidence covers CSRF, XSS, SQL injection, ownership, validation, error/log safety, memory cleanup, secure deletion and HTTPS. The draft report follows Section 1.3 of both supplied course PDFs. Python memory clearing and physical file erasure remain best effort; final thesis formatting and the in-class demonstration are separate submission tasks.
